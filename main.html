@@ -12,22 +12,12 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
       function load_prog(load_status, load_session) {
-        var loaded = 0;
-        var total = 0;
-
-        //go over all models that are/were loaded
         Object.keys(load_status).forEach(function (model_id) {
-          if (load_status[model_id].load_session == load_session) {
-            //need to make sure we're on the last loading session (not counting previous loaded models)
-            loaded += load_status[model_id].loaded;
-            total += load_status[model_id].total;
-
-            //set the relevant model's progress bar
-          }
+          document.getElementById("pbar").value =
+            load_status[model_id].loaded / load_status[model_id].total;
+          console.log(model_id);
         });
-
-        //set total progress bar
-        document.getElementById("pbar").value = loaded / total;
+        console.log(load_status);
       }
     </script>
   </head>
@@ -35,10 +25,26 @@
     <div class="container">
       <div class="function-table">
         <div>
+          <label>Add Module:</label>
+          <select id="modelSelect">
+            <option value="" selected>Sample</option>
+            <option value="model-1.stl">Model 1</option>
+            <option value="model-2.stl">Model 2</option>
+            <option value="model-3.stl">Model 3</option>
+          </select>
+          <label>or</label>
+
+          <input
+            type="file"
+            onchange="reset(); stl_viewer.add_model({id:modelID, local_file:this.files[0]});"
+            accept="*.*"
+          />
+        </div>
+        <div>
           <label>Background color:</label>
           <input
             type="color"
-            value="#FFFFFF"
+            value="#8e8383"
             id="background-color"
             name="background-color"
           />
@@ -67,6 +73,13 @@
             <option value="wireframe">Wireframe</option>
           </select>
         </div>
+
+        <div>
+          <input type="checkbox" id="rotate" />
+          <label for="">Rotate</label>
+          <input type="checkbox" id="grid" />
+          <label for="">Grid</label>
+        </div>
       </div>
       <div class="model-viewer">
         <div class="model-new hidden">ssss</div>
@@ -79,29 +92,38 @@
 
     <script>
       let modelID = 1;
-      let stl_viewer = new StlViewer(document.querySelector(".model-viewer"), {
-        on_model_mousedown: model_clicked,
-        loading_progress_callback: load_prog,
-      });
 
-      function model_clicked(model_id) {
-        stl_viewer.set_edges(modelID, false);
-        modelID = model_id;
-        console.log(modelID);
-        stl_viewer.set_edges(modelID, true);
-        textOverlayEl.textContent = `file name: ${stl_viewer.get_model_info(
-          modelID
-        )}`;
-      }
-
-      // stl_viewer.add_model({ id: 1, filename: "Bone_Dragon[30].stl" });
-      // stl_viewer.add_model({ id: 2, filename: "eyeball.stl", x: 3 });
-
+      const modelViewerEl = document.querySelector(".model-viewer");
+      const modelSelectEl = document.getElementById("modelSelect");
       const backgroundColorEl = document.getElementById("background-color");
       const modelColorEl = document.getElementById("model-color");
       const opacityEl = document.getElementById("opacity");
-      const displaySelect = document.getElementById("displaySelect");
+      const displaySelectEl = document.getElementById("displaySelect");
       const textOverlayEl = document.querySelector(".text-overlay");
+      const rotateEl = document.getElementById(rotate);
+      const gridEl = document.getElementById(grid);
+
+      let stl_viewer = new StlViewer(modelViewerEl, {
+        controls: 1,
+        auto_rotate: true,
+        on_model_mousedown: model_clicked,
+        on_model_drop: reset,
+        loading_progress_callback: load_prog,
+      });
+
+      // stl_viewer.add_model({ id: 1, filename: "Bone_Dragon[30].stl" });
+
+      modelSelectEl.addEventListener("change", function () {
+        if (modelSelectEl.value === "") {
+        } else {
+          reset();
+
+          stl_viewer.add_model({
+            id: modelID,
+            filename: `Models/${modelSelect.value}`,
+          });
+        }
+      });
 
       backgroundColorEl.addEventListener("input", function () {
         stl_viewer.set_bg_color(backgroundColorEl.value);
@@ -115,87 +137,42 @@
         stl_viewer.set_opacity(modelID, opacityEl.value / 100);
       });
 
-      displaySelect.addEventListener("change", function () {
+      displaySelectEl.addEventListener("change", function () {
         const selectedValue = displaySelect.value;
         stl_viewer.set_display(modelID, selectedValue);
-        stl_viewer.set_on_model_mouseclick(log);
       });
+
+      rotate.addEventListener("change", function () {
+        if (rotate.checked) {
+          stl_viewer.animate_model(modelID, {
+            delta: { rotationy: 1, msec: 6000, loop: true },
+          });
+        } else {
+          stl_viewer.animate_model(modelID, null);
+        }
+      });
+
+      grid.addEventListener("change", function () {
+        grid.checked ? stl_viewer.set_grid(true) : stl_viewer.set_grid(false);
+      });
+      // FUNCTION
+      function model_clicked(model_id) {
+        stl_viewer.set_edges(modelID, false);
+        modelID = model_id;
+        console.log(modelID);
+        stl_viewer.set_edges(modelID, true);
+        textOverlayEl.textContent = `file name: ${stl_viewer.get_model_info(
+          modelID
+        )}`;
+      }
+
+      function reset() {
+        stl_viewer.clean();
+        modelColorEl.value = "#FFFFFF";
+        opacityEl.value = 100;
+        displaySelectEl.value = "flat";
+        rotate.checked = false;
+      }
     </script>
   </body>
 </html>
-
-<!-- <!DOCTYPE html>
-<html>
-  <head>
-    <title>Viewstl Javascript Plugin - User file</title>
-  </head>
-
-  <style>
-    body {
-      text-align: center;
-    }
-  </style>
-
-  <script></script>
-
-  <body>
-    <div
-      id="stl_cont"
-      style="
-        width: 1200px;
-        height: 600px;
-        margin: 0 auto;
-        border: 2px solid #000;
-      "
-    >
-      ssssssssssssssssssssssssss
-    </div>
-    <button id="remove">Remove</button>
-    <div class="slider-container">
-      <input
-        type="range"
-        min="0"
-        max="100"
-        value="100"
-        class="slider"
-        id="mySlider"
-      />
-      <p>Value: <span id="sliderValue">50</span></p>
-    </div>
-    <input
-      id="color3"
-      type="color"
-      value="#FAFEAB"
-      onchange="$id('transparent3').checked=false;stl_viewer.set_color(, this.value);"
-    />
-    <script src="stl_viewer.min.js"></script>
-
-    <script>
-      var stl_viewer = new StlViewer(document.getElementById("stl_cont"), {});
-      var removeBtn = document.getElementById("remove");
-
-      const slider = document.getElementById("mySlider");
-      const sliderValueDisplay = document.getElementById("sliderValue");
-
-      stl_viewer.add_model({ id: 1, filename: "test.stl" });
-
-      function yeh_mouse_down() {
-        console.log("ok");
-      }
-      setTimeout(() => {
-        stl_viewer.set_on_model_mousedown(yeh_mouse_down);
-      }, 2000);
-
-      slider.addEventListener("input", () => {
-        const sliderValue = slider.value;
-        stl_viewer.set_opacity(1, sliderValue / 100);
-      });
-
-      removeBtn.addEventListener("click", function () {
-        stl_viewer.set_opacity(1, 0.5);
-      });
-    </script>
-
-    <input type="file" onchange='stl_viewer.add_model({local_file:this.files[0]});' accept="*.*">
-  </body>
-</html> -->
