@@ -1185,7 +1185,22 @@ function StlViewer(parent_element_obj, options) {
           model.units == "inch" ? 1 / 25.4 : 1
         )
       : [0, 0, 0];
-    return model.filename;
+    return {
+      name: model.filename
+        ? model.filename
+        : model.local_file
+        ? model.local_file.name
+        : "",
+      orig_filename: model.orig_filename ? model.orig_filename : null,
+      display: model.display ? model.display : null,
+      color: model.color ? model.color : null,
+      scale: { x: model.scalex, y: model.scaley, z: model.scalez },
+      volume: vol_and_area[0],
+      area: vol_and_area[1],
+      triangles: vol_and_area[2],
+      units: model.units,
+      opacity: model.opacity !== undefined ? model.opacity : 1,
+    };
   };
 
   this.get_vsb = function () {
